@@ -2,36 +2,33 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 
-	"github.com/dyhalmeida/fullcycle-golang-intensive/internal/order/entity"
 	"github.com/dyhalmeida/fullcycle-golang-intensive/internal/order/infra/database"
+	"github.com/dyhalmeida/fullcycle-golang-intensive/internal/order/usecase"
 )
 
 func main() {
-	order, errorNewOrder := entity.NewOrder("1", 30.0, 2.0)
-
-	if errorNewOrder != nil {
-		panic(errorNewOrder)
-	}
-
-	errorFinalPrice := order.CalculateFinalPrice()
-
-	if errorFinalPrice != nil {
-		panic(errorFinalPrice)
-	}
-
-	fmt.Printf("The final price is: %f", order.FinalPrice)
-
 	db, errorOpenDb := sql.Open("mysql", "root:root@tcp(mysql:3306)/orders")
 	if errorOpenDb != nil {
 		panic(errorOpenDb)
 	}
 
+	defer db.Close()
 	repository := database.NewOrderRepository(db)
-	errorSaveOrder := repository.Save(order)
-	if errorSaveOrder != nil {
-		panic(errorSaveOrder)
+	uc := usecase.NewCalculateFinalPriceUseCase(repository)
+
+	input := usecase.OrderInputDTO{
+		ID:    "2",
+		Price: 56,
+		Tax:   7,
 	}
+
+	output, errorExecute := uc.Execute(input)
+
+	if errorExecute != nil {
+		panic(errorExecute)
+	}
+
+	println(output.FinalPrice)
 
 }
